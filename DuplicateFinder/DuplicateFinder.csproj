@@ -63,7 +63,7 @@
   <ItemGroup>
     <Compile Include="DuplicatedFile.cs" />
     <Compile Include="DuplicateFinder.cs" />
-    <Compile Include="FilesProgress.cs" />
+    <Compile Include="DuplicateSearchProgress.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

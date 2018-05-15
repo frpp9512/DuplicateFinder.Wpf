@@ -10,24 +10,64 @@ namespace DuplicateFinder
 {
     class DuplicateFinder
     {
-        CancellationTokenSource Cancellation { get; } = new CancellationTokenSource();        
+        public DirectoryInfo SelectedDirectory { get; set; }
+        public List<DuplicatedFile> Duplicates { get; private set; }
+        public int DirectoriesCount { get; private set; }
+        public int ProcessedDirectoriesCount { get; private set; }
+        public Progress<DuplicateSearchProgress> Progress { get; private set; } = new Progress<DuplicateSearchProgress>();
+        CancellationTokenSource Cancellation { get; } = new CancellationTokenSource(); 
+        public long TotalSpaceInDuplicates { get => Duplicates.Sum(d => d.TotalDuplicationSize); }
+        public long TotalSpaceLostByDuplicates { get => TotalSpaceInDuplicates - Duplicates.Sum(d => d.AverageFileSize); }
 
-        public async Task<List<DuplicatedFile>> StartSearchDuplicated(string folderPath, IProgress<FilesProgress> progress)
+        public async Task StartSearchOfDuplicates()
         {
-            List<DuplicatedFile> duplicates = await Task.Run(() => FindDuplicates(folderPath, progress, Cancellation.Token, new List<FileInfo>(), new List<DuplicatedFile>()));
-            return duplicates;
+            try
+            {
+                await Task.Run(() => StartGetDirectoriesCount());
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            try
+            {
+                await Task.Run(() => StartSearchDuplicated());
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
-        public List<DuplicatedFile> FindDuplicates(string folderPath, IProgress<FilesProgress> progress, CancellationToken cancel, List<FileInfo> accumulatedFiles, List<DuplicatedFile> accumulatedDuplicated)
+        private async Task StartSearchDuplicated()
         {
-            List<DuplicatedFile> duplicates = new List<DuplicatedFile>();
+            Duplicates = await Task.Run(() => FindDuplicates(SelectedDirectory, Cancellation.Token));
+        }
 
-            DirectoryInfo current = new DirectoryInfo(folderPath);
-            IEnumerable<DirectoryInfo> dirs = current.EnumerateDirectories();
+        private List<DuplicatedFile> FindDuplicates(DirectoryInfo folder, CancellationToken cancel, List<FileInfo> accumulatedFiles = null, List<DuplicatedFile> accumulatedDuplicated = null)
+        {
+            DirectoryInfo current = folder;
 
-            IEnumerable<FileInfo> currentFiles = current.EnumerateFiles();
+            IEnumerable<DirectoryInfo> dirs;
 
-            if (accumulatedFiles.Count == 0)
+            IEnumerable<FileInfo> currentFiles;
+
+            try
+            {
+                dirs = current.EnumerateDirectories();
+                currentFiles = current.EnumerateFiles();
+            }
+            catch (Exception ex)
+            {
+                (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.ErrorFound, AdditionalInformation = ex.Message });
+                return accumulatedDuplicated;
+            }
+            
+            if(accumulatedDuplicated == null)
+            {
+                accumulatedDuplicated = new List<DuplicatedFile>();
+            }
+            if (accumulatedFiles == null)
             {
                 accumulatedFiles = currentFiles.ToList();
             }
@@ -35,49 +75,66 @@ namespace DuplicateFinder
             {
                 foreach (var file in currentFiles)
                 {
-                    dynamic result = accumulatedFiles.Where(f => f.Name == file.Name);
-                    if (result.Count() > 0)
+                    dynamic result = accumulatedFiles.Where(f => f.Name == file.Name && f.Length == file.Length);
+                    if ((result as IEnumerable<FileInfo>).Count() > 0)
                     {
                         DuplicatedFile df = new DuplicatedFile { FileName = file.Name };
                         df.Files.Add(file);
-                        df.Files.Add(result.ElementAt(0));
-                        duplicates.Add(df);
-                        accumulatedFiles.Remove(result.ElementAt(0));
+                        df.Files.Add((result as IEnumerable<FileInfo>).ElementAt(0));
+                        accumulatedDuplicated.Add(df);
+                        accumulatedFiles.Remove((result as IEnumerable<FileInfo>).ElementAt(0));
                     }
                     else
                     {
-                        result = accumulatedDuplicated.Where(d => d.FileName == file.Name);
-                        if(result.Count() > 0)
+                        result = accumulatedDuplicated.Where(d => d.FileName == file.Name && d.AverageFileSize == file.Length);
+                        if ((result as IEnumerable<DuplicatedFile>).Count() > 0)
                         {
-
+                            DuplicatedFile df = (result as IEnumerable<DuplicatedFile>).ElementAt(0);
+                            df.Files.Add(file);
                         }
-                        accumulatedFiles.Add(file);
+                        else
+                        {
+                            accumulatedFiles.Add(file);
+                        }
                     }
                 }
+                ProcessedDirectoriesCount++;
             }
+
+            (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.SearchingDuplicates, CurrentDirectory = current.FullName, Percentage = ProcessedDirectoriesCount * 100 / DirectoriesCount });
+            cancel.ThrowIfCancellationRequested();
 
             foreach (var dir in dirs)
             {
-
+                FindDuplicates(dir, cancel, accumulatedFiles, accumulatedDuplicated);
             }
 
-            return duplicates;
+            return accumulatedDuplicated;
         }
 
-        public int StartGetDirectoriesCount(string folderPath)
+        private async Task StartGetDirectoriesCount()
         {
-            return GetDirectoriesCount(folderPath, Cancellation.Token);
+            (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.DetectingDirectories });
+            DirectoriesCount = await Task.Run(() => GetDirectoriesCount(SelectedDirectory, Cancellation.Token));
         }
 
-        private int GetDirectoriesCount(string folderPath, CancellationToken cancel)
+        private int GetDirectoriesCount(DirectoryInfo directory, CancellationToken cancel)
         {
             cancel.ThrowIfCancellationRequested();
-            DirectoryInfo current = new DirectoryInfo(folderPath);
-            IEnumerable<DirectoryInfo> directories = current.EnumerateDirectories();
+            IEnumerable<DirectoryInfo> directories;
+            try
+            {
+                directories = directory.EnumerateDirectories();
+            }
+            catch (Exception ex)
+            {
+                (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.ErrorFound, AdditionalInformation = ex.Message });
+                return 0;
+            }
             int count = directories.Count();
             foreach (var dir in directories)
             {
-                count += GetDirectoriesCount(dir.FullName, cancel);
+                count += GetDirectoriesCount(dir, cancel);
             }
             return count;
         }
