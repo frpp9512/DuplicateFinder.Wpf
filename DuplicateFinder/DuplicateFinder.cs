@@ -12,7 +12,8 @@ namespace DuplicateFinder
     {
         public DirectoryInfo SelectedDirectory { get; set; }
         public List<DuplicatedFile> Duplicates { get; private set; }
-        public int DirectoriesCount { get; private set; }
+        private List<DirectoryInfo> DirectoryList { get; set; } = new List<DirectoryInfo>();
+        public int DirectoriesCount { get => DirectoryList.Count; }
         public int ProcessedDirectoriesCount { get; private set; }
         public Progress<DuplicateSearchProgress> Progress { get; private set; } = new Progress<DuplicateSearchProgress>();
         CancellationTokenSource Cancellation { get; } = new CancellationTokenSource(); 
@@ -48,31 +49,26 @@ namespace DuplicateFinder
         {
             DirectoryInfo current = folder;
 
-            IEnumerable<DirectoryInfo> dirs;
-
             IEnumerable<FileInfo> currentFiles;
 
-            try
-            {
-                dirs = current.EnumerateDirectories();
-                currentFiles = current.EnumerateFiles();
-            }
-            catch (Exception ex)
-            {
-                (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.ErrorFound, AdditionalInformation = ex.Message });
-                return accumulatedDuplicated;
-            }
-            
-            if(accumulatedDuplicated == null)
-            {
-                accumulatedDuplicated = new List<DuplicatedFile>();
-            }
             if (accumulatedFiles == null)
             {
-                accumulatedFiles = currentFiles.ToList();
+                accumulatedFiles = current.EnumerateFiles().ToList();
+                accumulatedDuplicated = new List<DuplicatedFile>();
+                dirs = DirectoryList.AsEnumerable();
             }
             else
             {
+                try
+                {
+                    dirs = current.EnumerateDirectories();
+                    currentFiles = current.EnumerateFiles();
+                }
+                catch (Exception ex)
+                {
+                    (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.ErrorFound, AdditionalInformation = ex.Message });
+                    return accumulatedDuplicated;
+                }
                 foreach (var file in currentFiles)
                 {
                     dynamic result = accumulatedFiles.Where(f => f.Name == file.Name && f.Length == file.Length);
@@ -98,7 +94,6 @@ namespace DuplicateFinder
                         }
                     }
                 }
-                ProcessedDirectoriesCount++;
             }
 
             (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.SearchingDuplicates, CurrentDirectory = current.FullName, Percentage = ProcessedDirectoriesCount * 100 / DirectoriesCount });
@@ -107,6 +102,7 @@ namespace DuplicateFinder
             foreach (var dir in dirs)
             {
                 FindDuplicates(dir, cancel, accumulatedFiles, accumulatedDuplicated);
+                ProcessedDirectoriesCount++;
             }
 
             return accumulatedDuplicated;
@@ -115,10 +111,10 @@ namespace DuplicateFinder
         private async Task StartGetDirectoriesCount()
         {
             (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.DetectingDirectories });
-            DirectoriesCount = await Task.Run(() => GetDirectoriesCount(SelectedDirectory, Cancellation.Token));
+            await Task.Run(() => MapDirectories(SelectedDirectory, Cancellation.Token));
         }
 
-        private int GetDirectoriesCount(DirectoryInfo directory, CancellationToken cancel)
+        private void MapDirectories(DirectoryInfo directory, CancellationToken cancel)
         {
             cancel.ThrowIfCancellationRequested();
             IEnumerable<DirectoryInfo> directories;
@@ -129,14 +125,13 @@ namespace DuplicateFinder
             catch (Exception ex)
             {
                 (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.ErrorFound, AdditionalInformation = ex.Message });
-                return 0;
+                return;
             }
-            int count = directories.Count();
+            DirectoryList.AddRange(directories);
             foreach (var dir in directories)
             {
-                count += GetDirectoriesCount(dir, cancel);
+                MapDirectories(dir, cancel);
             }
-            return count;
         }
 
         public void CancelAll()

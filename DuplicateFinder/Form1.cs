@@ -15,7 +15,6 @@ namespace DuplicateFinder
     public partial class Form1 : Form
     {
         DuplicateFinder finder;
-        FrmLoading loadingScreen;
 
         public Form1()
         {
@@ -24,13 +23,8 @@ namespace DuplicateFinder
 
         private void BtnBrowseDirectory_Click(object sender, EventArgs e)
         {
-            BrowseDirectory();
-        }
-
-        private void BrowseDirectory()
-        {
             FolderBrowserDialog fbd = new FolderBrowserDialog();
-            if (fbd.ShowDialog() == DialogResult.OK)
+            if(fbd.ShowDialog() == DialogResult.OK)
             {
                 TxtFolderPath.Text = fbd.SelectedPath;
             }
@@ -45,7 +39,6 @@ namespace DuplicateFinder
             {
                 Stopwatch watch = new Stopwatch();
                 watch.Start();
-                //txtConsole.AppendText($"Task started at: {DateTime.Now}{Environment.NewLine}");
                 await Task.Run(() => finder.StartSearchOfDuplicates());
                 watch.Stop();
                 pbOverallProgress.Value = 100;
@@ -53,6 +46,8 @@ namespace DuplicateFinder
                 loadingScreen.Show();
                 await Task.Run(() => SearchDuplicates());
                 stlbStatus.Text = $"Task finished in: {watch.Elapsed}. Found: {finder.Duplicates.Count} files with duplications. Total space lost by duplicates: {Toolkit.GetSizeString(finder.TotalSpaceInDuplicates)}.";
+                #region ToMakeLogs
+                //txtConsole.AppendText($"Task started at: {DateTime.Now}{Environment.NewLine}");
                 //txtConsole.AppendText($"Task finished at: {DateTime.Now}{Environment.NewLine}Task time: {watch.Elapsed}{Environment.NewLine}");
                 //txtConsole.AppendText($"-------------------------------------{Environment.NewLine}");
                 //txtConsole.AppendText($"Founded: {finder.Duplicates.Count} files repeated at least 1 time.{Environment.NewLine}");
@@ -69,17 +64,41 @@ namespace DuplicateFinder
                 //txtConsole.AppendText($"Total space in duplicates: { Toolkit.GetSizeString(finder.TotalSpaceInDuplicates) }");
                 //txtConsole.AppendText(Environment.NewLine);
                 //txtConsole.AppendText($"Total space lost by duplicates: { Toolkit.GetSizeString(finder.TotalSpaceLostByDuplicates) }");
-                //txtConsole.ResumeLayout();
+                //txtConsole.ResumeLayout(); 
+                #endregion
+                txtConsole.AppendText($"Task started at: {DateTime.Now}{Environment.NewLine}");
+                await Task.Run(() => finder.StartSearchOfDuplicates());
+                watch.Stop();
+                pbOverallProgress.Value = 100;
+                txtConsole.AppendText($"Task finished at: {DateTime.Now}{Environment.NewLine}Task time: {watch.Elapsed}{Environment.NewLine}");
+                txtConsole.AppendText($"-------------------------------------{Environment.NewLine}");
+                txtConsole.AppendText($"Founded: {finder.Duplicates.Count} files repeated at least 1 time.{Environment.NewLine}");
+                txtConsole.AppendText($"Total space in duplicates: {GetSizeString(finder.TotalSpaceInDuplicates)}{Environment.NewLine}");
+                txtConsole.AppendText($"Total space lost by duplicates: {GetSizeString(finder.TotalSpaceLostByDuplicates)}{Environment.NewLine}");
+                txtConsole.AppendText("-------------------------------------");
+                txtConsole.SuspendLayout();
+                foreach (var file in finder.Duplicates)
+                {
+                    txtConsole.AppendText($"-------------------------------------{ Environment.NewLine }File: { file.FileName } - Repeated: { file.TimesRepeated } times. - Average size: { GetSizeString(file.AverageFileSize) } - Total size in duplicates: { GetSizeString(file.TotalDuplicationSize) } { Environment.NewLine }{ string.Join(Environment.NewLine, file.Files.Select(f => f.FullName).ToArray()) } {Environment.NewLine}");
+                }
+                txtConsole.AppendText("-------------------------");
+                txtConsole.AppendText(Environment.NewLine);
+                txtConsole.AppendText($"Total space in duplicates: { GetSizeString(finder.TotalSpaceInDuplicates) }");
+                txtConsole.AppendText(Environment.NewLine);
+                txtConsole.AppendText($"Total space lost by duplicates: { GetSizeString(finder.TotalSpaceLostByDuplicates) }");
+                txtConsole.ResumeLayout();
                 return;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                MessageBox.Show($"Something happend. This is the message: {ex.Message}");
+                MessageBox.Show($"Ups! Something happend. This is the message: {ex.Message}");
+                MessageBox.Show("Stopped by the user.");
                 ResetUI();
                 return;
             }
         }
 
+<<<<<<< HEAD
         private void SearchDuplicates()
         {
             var filterResult = finder?.Duplicates.Where(d => d.FileName.ToLower().Contains(txtQuickSearch.Text.ToLower()));
@@ -99,14 +118,16 @@ namespace DuplicateFinder
             {
                 icon = Icon.ExtractAssociatedIcon(duplicate.Files[0].FullName).ToBitmap();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //txtConsole.AppendText($"Error: {ex.Message}");
+                // TODO - Log exception extracting icon.
             }
             int added = dgvDuplicates.Rows.Add(icon, duplicate.FileName, duplicate.TimesRepeated, Toolkit.GetSizeString(duplicate.AverageFileSize), Toolkit.GetSizeString(duplicate.TotalDuplicationSize));
             dgvDuplicates.Rows[added].Tag = duplicate;
         }
 
+=======
+>>>>>>> parent of f5cdf5d... Operational basic version
         private void ResetUI()
         {
             pbOverallProgress.Value = 0;
@@ -127,14 +148,18 @@ namespace DuplicateFinder
                 case DuplicateSearchOperation.SearchingDuplicates:
                     pbOverallProgress.Style = ProgressBarStyle.Blocks;
                     pbOverallProgress.Value = e.Percentage;
-                    LbAction.Text = $"Progress: {e.Percentage} % - Processed: {finder.ProcessedDirectoriesCount}/{finder.DirectoriesCount} directories.";
+                    LbAction.Text = $"Progress: {e.Percentage} % - Processed: {finder.ProcessedDirectoriesCount}/{finder.DirectoriesCount}";
                     stlbStatus.Text = $"Processing: {e.CurrentDirectory}";
                     break;
                 case DuplicateSearchOperation.ErrorFound:
+<<<<<<< HEAD
+                    // TODO - Log errors.
+=======
                     Invoke((MethodInvoker)delegate
                     {
-                        //txtConsole.Text = $"Error found: {e.AdditionalInformation}";
+                        txtConsole.Text = $"Error found: {e.AdditionalInformation}";
                     });
+>>>>>>> parent of f5cdf5d... Operational basic version
                     break;
                 default:
                     break;
@@ -146,18 +171,17 @@ namespace DuplicateFinder
             finder?.CancelAll();
         }
 
-        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        string GetSizeString(long size)
         {
-            BrowseDirectory();
-        }
-
-        private void dgvDuplicates_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if(e.RowIndex >= 0 && dgvDuplicates.Rows.Count > 0)
+            string[] mu = { "Bytes", "KB", "MB", "GB", "TB" };
+            int iterations = 0;
+            decimal convertedSize = size;
+            while (convertedSize > 1024)
             {
-                DuplicatedFile df = dgvDuplicates.Rows[e.RowIndex].Tag as DuplicatedFile;
-                Process.Start(df.Files[0].FullName);
+                convertedSize /= 1024;
+                iterations++;
             }
+            return $"{decimal.Round(convertedSize, 2, MidpointRounding.AwayFromZero)} {(iterations < mu.Length ? mu[iterations] : "NONE")}";
         }
     }
 }
