@@ -20,7 +20,7 @@ namespace DuplicateFinder
             totalDuplications = foundedDuplications;
             lbTaskTime.Text = $"Task time: {taskTime}";
             lbProcessedDirs.Text = $"Processed: {processedDirs} directorires";
-            lbFoundedDuplications.Text = $"Founded with duplications: {foundedDuplications}";
+            lbFoundedDuplications.Text = $"Founded with duplications: {foundedDuplications} files";
             lbTotalSize.Text = $"Total size of the files: {Toolkit.GetSizeString(totalsize)}";
             lbLostSpace.Text = $"Total space lost by duplications: {Toolkit.GetSizeString(spaceLost)}";
             btnOK.Enabled = false;
@@ -34,12 +34,12 @@ namespace DuplicateFinder
                 progressBar1.Style = ProgressBarStyle.Blocks;
             }
             progressBar1.Value = duplicationsShowed * 100 / totalDuplications;
-            LbProgress.Text = $"{progressBar1.Value} %";
+            LbProgress.Text = $"Progress: {progressBar1.Value} %";
             if (finished)
             {
                 btnOK.Enabled = true;
                 Height = 321;
-                LbProgress.Text = $"100 %";
+                LbProgress.Text = $"Progress: 100 %";
                 btnOK.Focus();
             }
         }

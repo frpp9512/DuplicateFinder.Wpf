@@ -32,6 +32,11 @@
             this.TxtFolderPath = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.dgvDuplicates = new System.Windows.Forms.DataGridView();
+            this.clIcon = new System.Windows.Forms.DataGridViewImageColumn();
+            this.clFileName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.clTimesRepeated = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.clAverageFileSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.clTotalSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.pbOverallProgress = new System.Windows.Forms.ProgressBar();
@@ -43,11 +48,6 @@
             this.txtQuickSearch = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
-            this.clIcon = new System.Windows.Forms.DataGridViewImageColumn();
-            this.clFileName = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.clTimesRepeated = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.clAverageFileSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.clTotalSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDuplicates)).BeginInit();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -73,7 +73,7 @@
             this.TxtFolderPath.Name = "TxtFolderPath";
             this.TxtFolderPath.Size = new System.Drawing.Size(447, 22);
             this.TxtFolderPath.TabIndex = 1;
-            this.TxtFolderPath.Text = "D:\\New folder";
+            this.TxtFolderPath.Text = "D:\\Videos";
             // 
             // label2
             // 
@@ -112,6 +112,53 @@
             this.dgvDuplicates.Size = new System.Drawing.Size(565, 147);
             this.dgvDuplicates.TabIndex = 4;
             this.dgvDuplicates.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvDuplicates_CellDoubleClick);
+            // 
+            // clIcon
+            // 
+            this.clIcon.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.clIcon.DataPropertyName = "Icon";
+            this.clIcon.HeaderText = "";
+            this.clIcon.ImageLayout = System.Windows.Forms.DataGridViewImageCellLayout.Zoom;
+            this.clIcon.Name = "clIcon";
+            this.clIcon.ReadOnly = true;
+            this.clIcon.Width = 5;
+            // 
+            // clFileName
+            // 
+            this.clFileName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.clFileName.DataPropertyName = "FileName";
+            this.clFileName.HeaderText = "File name";
+            this.clFileName.Name = "clFileName";
+            this.clFileName.ReadOnly = true;
+            // 
+            // clTimesRepeated
+            // 
+            this.clTimesRepeated.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.clTimesRepeated.DataPropertyName = "TimesRepeated";
+            this.clTimesRepeated.HeaderText = "Times Repeated";
+            this.clTimesRepeated.Name = "clTimesRepeated";
+            this.clTimesRepeated.ReadOnly = true;
+            this.clTimesRepeated.Width = 90;
+            // 
+            // clAverageFileSize
+            // 
+            this.clAverageFileSize.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.clAverageFileSize.DataPropertyName = "AverageFileSize";
+            this.clAverageFileSize.HeaderText = "Average Size";
+            this.clAverageFileSize.Name = "clAverageFileSize";
+            this.clAverageFileSize.ReadOnly = true;
+            this.clAverageFileSize.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Programmatic;
+            this.clAverageFileSize.Width = 90;
+            // 
+            // clTotalSize
+            // 
+            this.clTotalSize.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.clTotalSize.DataPropertyName = "TotalDuplicationSize";
+            this.clTotalSize.HeaderText = "Total";
+            this.clTotalSize.Name = "clTotalSize";
+            this.clTotalSize.ReadOnly = true;
+            this.clTotalSize.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Programmatic;
+            this.clTotalSize.Width = 90;
             // 
             // label3
             // 
@@ -245,53 +292,6 @@
             this.linkLabel1.TabStop = true;
             this.linkLabel1.Text = "Browse...";
             this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
-            // 
-            // clIcon
-            // 
-            this.clIcon.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.clIcon.DataPropertyName = "Icon";
-            this.clIcon.HeaderText = "";
-            this.clIcon.ImageLayout = System.Windows.Forms.DataGridViewImageCellLayout.Zoom;
-            this.clIcon.Name = "clIcon";
-            this.clIcon.ReadOnly = true;
-            this.clIcon.Width = 5;
-            // 
-            // clFileName
-            // 
-            this.clFileName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.clFileName.DataPropertyName = "FileName";
-            this.clFileName.HeaderText = "File name";
-            this.clFileName.Name = "clFileName";
-            this.clFileName.ReadOnly = true;
-            // 
-            // clTimesRepeated
-            // 
-            this.clTimesRepeated.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.clTimesRepeated.DataPropertyName = "TimesRepeated";
-            this.clTimesRepeated.HeaderText = "Times Repeated";
-            this.clTimesRepeated.Name = "clTimesRepeated";
-            this.clTimesRepeated.ReadOnly = true;
-            this.clTimesRepeated.Width = 90;
-            // 
-            // clAverageFileSize
-            // 
-            this.clAverageFileSize.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.clAverageFileSize.DataPropertyName = "AverageFileSize";
-            this.clAverageFileSize.HeaderText = "Average Size";
-            this.clAverageFileSize.Name = "clAverageFileSize";
-            this.clAverageFileSize.ReadOnly = true;
-            this.clAverageFileSize.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Programmatic;
-            this.clAverageFileSize.Width = 90;
-            // 
-            // clTotalSize
-            // 
-            this.clTotalSize.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.clTotalSize.DataPropertyName = "TotalDuplicationSize";
-            this.clTotalSize.HeaderText = "Total";
-            this.clTotalSize.Name = "clTotalSize";
-            this.clTotalSize.ReadOnly = true;
-            this.clTotalSize.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Programmatic;
-            this.clTotalSize.Width = 90;
             // 
             // Form1
             // 

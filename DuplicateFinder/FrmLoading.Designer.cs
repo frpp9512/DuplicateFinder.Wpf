@@ -72,7 +72,7 @@
             this.label3.Size = new System.Drawing.Size(365, 63);
             this.label3.TabIndex = 1;
             this.label3.Text = "The search is complete and now we are getting ready\r\neverything so you can check " +
-    "the results properly.\r\nMeanwhile you can check this statics from the task:";
+    "the results properly.\r\nMeanwhile you can review this statics from the task:";
             // 
             // lbTaskTime
             // 
@@ -163,7 +163,7 @@
             // 
             // LbProgress
             // 
-            this.LbProgress.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.LbProgress.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.LbProgress.AutoSize = true;
             this.LbProgress.Font = new System.Drawing.Font("Segoe UI", 8F);

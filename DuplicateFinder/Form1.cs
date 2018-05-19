@@ -16,6 +16,7 @@ namespace DuplicateFinder
     {
         DuplicateFinder finder;
         FrmLoading loadingScreen;
+        FrmDuplicateViewer duplicateViewer;
 
         public Form1()
         {
@@ -77,7 +78,7 @@ namespace DuplicateFinder
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Something happend. This is the message: {ex.Message}");
+                MessageBox.Show($"Ups! Something happend. This is the message: {ex.Message}", "Problem", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 ResetUI();
                 return;
             }
@@ -159,7 +160,98 @@ namespace DuplicateFinder
             if(e.RowIndex >= 0 && dgvDuplicates.Rows.Count > 0)
             {
                 DuplicatedFile df = dgvDuplicates.Rows[e.RowIndex].Tag as DuplicatedFile;
-                Process.Start(df.Files[0].FullName);
+                if(duplicateViewer == null)
+                { InitializeViewer(); }
+                else
+                { if (duplicateViewer.IsDisposed) { InitializeViewer(); } }
+                duplicateViewer.SetDuplicate(df);
+                duplicateViewer.Show();
+                duplicateViewer.BringToFront();
+            }
+        }
+
+        private void InitializeViewer()
+        {
+            duplicateViewer = new FrmDuplicateViewer();
+            duplicateViewer.RequestingNextDuplicate += Frm_RequestingNextDuplicate;
+            duplicateViewer.RequestingPrevDuplicate += Frm_RequestingPrevDuplicate;
+            duplicateViewer.RequestingRemoveDuplication += DuplicateViewer_RequestingRemoveDuplication;
+            duplicateViewer.RemovedFile += DuplicateViewer_RemovedFile;
+        }
+
+        private void DuplicateViewer_RemovedFile(object sender, string e)
+        {
+            if (dgvDuplicates.SelectedRows.Count > 0)
+            {
+                int selectedIndex = dgvDuplicates.SelectedRows[0].Index;
+                DuplicatedFile df = dgvDuplicates.Rows[selectedIndex].Tag as DuplicatedFile;
+                df.Files.Remove(df.Files.FirstOrDefault(d => d.FullName == e));
+                dgvDuplicates.Rows[selectedIndex].Cells[2].Value = df.TimesRepeated;
+                dgvDuplicates.Rows[selectedIndex].Cells[3].Value = Toolkit.GetSizeString(df.AverageFileSize);
+                dgvDuplicates.Rows[selectedIndex].Cells[4].Value = Toolkit.GetSizeString(df.SpaceLostByDuplication);
+            }
+        }
+
+        private void DuplicateViewer_RequestingRemoveDuplication(object sender, EventArgs e)
+        {
+            if (dgvDuplicates.SelectedRows.Count > 0)
+            {
+                int selectedIndex = dgvDuplicates.SelectedRows[0].Index;
+                DuplicatedFile df = dgvDuplicates.Rows[selectedIndex].Tag as DuplicatedFile;
+                if(df.Files.Count <= 1)
+                {
+                    duplicateViewer.SendToBack();
+                    MessageBox.Show($"The file: '{df.FileName}' is no more duplicated and is no more in this list.{Environment.NewLine}{(df.Files.Count == 1 ? $"The final path is: '{df.Files[0].FullName}'" : "")}", "Duplication removed", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    finder.Duplicates.Remove(df);
+                    ShowNextDuplication();
+                    dgvDuplicates.Rows.RemoveAt(selectedIndex);
+                    duplicateViewer.BringToFront();
+                }
+            }
+        }
+
+        private void Frm_RequestingPrevDuplicate(object sender, EventArgs e)
+        {
+            ShowPrevDuplication();
+        }
+
+        private void ShowPrevDuplication()
+        {
+            if (dgvDuplicates.SelectedRows.Count > 0)
+            {
+                int new_selection = dgvDuplicates.SelectedRows[0].Index - 1 >= 0 ? dgvDuplicates.SelectedRows[0].Index - 1 : 0;
+                SelectRow(new_selection);
+                DuplicatedFile df = dgvDuplicates.Rows[new_selection].Tag as DuplicatedFile;
+                duplicateViewer.SetDuplicate(df);
+            }
+        }
+
+        private void Frm_RequestingNextDuplicate(object sender, EventArgs e)
+        {
+            ShowNextDuplication();
+        }
+
+        private void ShowNextDuplication()
+        {
+            if (dgvDuplicates.SelectedRows.Count >= 0)
+            {
+                int new_selection = dgvDuplicates.SelectedRows[0].Index + 1 < dgvDuplicates.Rows.Count ? dgvDuplicates.SelectedRows[0].Index + 1 : 0;
+                SelectRow(new_selection);
+                DuplicatedFile df = dgvDuplicates.Rows[new_selection].Tag as DuplicatedFile;
+                duplicateViewer.SetDuplicate(df);
+            }
+        }
+
+        private void SelectRow(int index)
+        {
+            if (index >= 0)
+            {
+                dgvDuplicates.ClearSelection();
+                dgvDuplicates.Rows[index].Selected = true;
+                if (!dgvDuplicates.Rows[index].Displayed)
+                {
+                    dgvDuplicates.FirstDisplayedScrollingRowIndex = (index - 5 >= 0 ? index - 5 : index);
+                }
             }
         }
     }
