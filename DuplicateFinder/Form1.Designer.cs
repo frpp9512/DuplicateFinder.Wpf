@@ -267,6 +267,7 @@
             this.txtQuickSearch.Name = "txtQuickSearch";
             this.txtQuickSearch.Size = new System.Drawing.Size(151, 22);
             this.txtQuickSearch.TabIndex = 8;
+            this.txtQuickSearch.TextChanged += new System.EventHandler(this.txtQuickSearch_TextChanged);
             // 
             // label5
             // 

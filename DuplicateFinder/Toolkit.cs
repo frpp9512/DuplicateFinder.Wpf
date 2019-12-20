@@ -11,7 +11,7 @@ namespace DuplicateFinder
         public static string GetSizeString(long size)
         {
             string[] mu = { "Bytes", "KB", "MB", "GB", "TB" };
-            int iterations = 0;
+            var iterations = 0;
             decimal convertedSize = size;
             while (convertedSize > 1024)
             {

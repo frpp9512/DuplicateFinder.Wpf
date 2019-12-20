@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -14,9 +11,9 @@ namespace DuplicateFinder
 {
     public partial class Form1 : Form
     {
-        DuplicateFinder finder;
-        FrmLoading loadingScreen;
-        FrmDuplicateViewer duplicateViewer;
+        private DuplicateFinder finder;
+        private FrmLoading loadingScreen;
+        private FrmDuplicateViewer duplicateViewer;
 
         public Form1()
         {
@@ -30,7 +27,7 @@ namespace DuplicateFinder
 
         private void BrowseDirectory()
         {
-            FolderBrowserDialog fbd = new FolderBrowserDialog();
+            var fbd = new FolderBrowserDialog();
             if (fbd.ShowDialog() == DialogResult.OK)
             {
                 TxtFolderPath.Text = fbd.SelectedPath;
@@ -41,13 +38,13 @@ namespace DuplicateFinder
         {
             finder = new DuplicateFinder { SelectedDirectory = new DirectoryInfo(TxtFolderPath.Text) };
             finder.Progress.ProgressChanged += Progress_ProgressChanged1;
-            
+
             try
             {
-                Stopwatch watch = new Stopwatch();
+                var watch = new Stopwatch();
                 watch.Start();
-                
-                await Task.Run(() => finder.StartSearchOfDuplicates());
+
+                await Task.Run(() => finder.StartSearchOfDuplicatesAsync());
                 watch.Stop();
                 pbOverallProgress.Value = 100;
                 loadingScreen = new FrmLoading(watch.Elapsed, finder.ProcessedDirectoriesCount, finder.Duplicates.Count, finder.TotalSpaceInDuplicates, finder.TotalSpaceLostByDuplicates);
@@ -78,7 +75,7 @@ namespace DuplicateFinder
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ups! Something happend. This is the message: {ex.Message}", "Problem", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _ = MessageBox.Show($"Ups! Something happend. This is the message: {ex.Message}", "Problem", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 ResetUI();
                 return;
             }
@@ -86,14 +83,17 @@ namespace DuplicateFinder
 
         private void SearchDuplicates()
         {
-            var filterResult = finder?.Duplicates.Where(d => d.FileName.ToLower().Contains(txtQuickSearch.Text.ToLower()));
-
-            Invoke((MethodInvoker)delegate { dgvDuplicates.Rows.Clear(); });
-            foreach (var duplicate in filterResult)
+            if (txtQuickSearch.Text.Length > 3 || txtQuickSearch.Text.Length == 0)
             {
-                Invoke((MethodInvoker)delegate { AddDatagridRow(duplicate); loadingScreen.ReportProgress(dgvDuplicates.Rows.Count, false); });
+                var filterResult = finder?.Duplicates.Where(d => d.FileName.ToLower().Contains(txtQuickSearch.Text.ToLower()));
+                filterResult = filterResult.OrderByDescending(d => d.AverageFileSize);
+                _ = Invoke((MethodInvoker)delegate { dgvDuplicates.Rows.Clear(); });
+                foreach (var duplicate in filterResult)
+                {
+                    _ = Invoke((MethodInvoker)delegate { AddDatagridRow(duplicate); loadingScreen.ReportProgress(dgvDuplicates.Rows.Count, false); });
+                }
+                _ = Invoke((MethodInvoker)delegate { loadingScreen.ReportProgress(dgvDuplicates.Rows.Count, true); });
             }
-            Invoke((MethodInvoker)delegate { loadingScreen.ReportProgress(dgvDuplicates.Rows.Count, true); });
         }
 
         private void AddDatagridRow(DuplicatedFile duplicate)
@@ -107,7 +107,7 @@ namespace DuplicateFinder
             {
                 // TODO - Log the error extracting icon.
             }
-            int added = dgvDuplicates.Rows.Add(icon, duplicate.FileName, duplicate.TimesRepeated, Toolkit.GetSizeString(duplicate.AverageFileSize), Toolkit.GetSizeString(duplicate.TotalDuplicationSize));
+            var added = dgvDuplicates.Rows.Add(icon, duplicate.FileName, duplicate.TimesRepeated, Toolkit.GetSizeString(duplicate.AverageFileSize), Toolkit.GetSizeString(duplicate.TotalDuplicationSize));
             dgvDuplicates.Rows[added].Tag = duplicate;
         }
 
@@ -117,6 +117,7 @@ namespace DuplicateFinder
             pbOverallProgress.Style = ProgressBarStyle.Blocks;
             LbAction.Text = "Progress:";
             stlbStatus.Text = "Welcome to Duplicate Finder";
+
         }
 
         private void Progress_ProgressChanged1(object sender, DuplicateSearchProgress e)
@@ -135,14 +136,14 @@ namespace DuplicateFinder
                     stlbStatus.Text = $"Processing: {e.CurrentDirectory}";
                     break;
                 case DuplicateSearchOperation.ErrorFound:
-                    Invoke((MethodInvoker)delegate
-                    {
-                        // TODO - Log this error.
-                    });
+                    _ = Invoke((MethodInvoker)delegate
+                      {
+                          // TODO - Log this error.
+                      });
                     break;
                 default:
                     break;
-            }            
+            }
         }
 
         private void btnStop_Click(object sender, EventArgs e)
@@ -157,10 +158,10 @@ namespace DuplicateFinder
 
         private void dgvDuplicates_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
-            if(e.RowIndex >= 0 && dgvDuplicates.Rows.Count > 0)
+            if (e.RowIndex >= 0 && dgvDuplicates.Rows.Count > 0)
             {
-                DuplicatedFile df = dgvDuplicates.Rows[e.RowIndex].Tag as DuplicatedFile;
-                if(duplicateViewer == null)
+                var df = dgvDuplicates.Rows[e.RowIndex].Tag as DuplicatedFile;
+                if (duplicateViewer == null)
                 { InitializeViewer(); }
                 else
                 { if (duplicateViewer.IsDisposed) { InitializeViewer(); } }
@@ -183,9 +184,9 @@ namespace DuplicateFinder
         {
             if (dgvDuplicates.SelectedRows.Count > 0)
             {
-                int selectedIndex = dgvDuplicates.SelectedRows[0].Index;
-                DuplicatedFile df = dgvDuplicates.Rows[selectedIndex].Tag as DuplicatedFile;
-                df.Files.Remove(df.Files.FirstOrDefault(d => d.FullName == e));
+                var selectedIndex = dgvDuplicates.SelectedRows[0].Index;
+                var df = dgvDuplicates.Rows[selectedIndex].Tag as DuplicatedFile;
+                _ = df.Files.Remove(df.Files.FirstOrDefault(d => d.FullName == e));
                 dgvDuplicates.Rows[selectedIndex].Cells[2].Value = df.TimesRepeated;
                 dgvDuplicates.Rows[selectedIndex].Cells[3].Value = Toolkit.GetSizeString(df.AverageFileSize);
                 dgvDuplicates.Rows[selectedIndex].Cells[4].Value = Toolkit.GetSizeString(df.SpaceLostByDuplication);
@@ -196,13 +197,13 @@ namespace DuplicateFinder
         {
             if (dgvDuplicates.SelectedRows.Count > 0)
             {
-                int selectedIndex = dgvDuplicates.SelectedRows[0].Index;
-                DuplicatedFile df = dgvDuplicates.Rows[selectedIndex].Tag as DuplicatedFile;
-                if(df.Files.Count <= 1)
+                var selectedIndex = dgvDuplicates.SelectedRows[0].Index;
+                var df = dgvDuplicates.Rows[selectedIndex].Tag as DuplicatedFile;
+                if (df.Files.Count <= 1)
                 {
                     duplicateViewer.SendToBack();
-                    MessageBox.Show($"The file: '{df.FileName}' is no more duplicated and is no more in this list.{Environment.NewLine}{(df.Files.Count == 1 ? $"The final path is: '{df.Files[0].FullName}'" : "")}", "Duplication removed", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    finder.Duplicates.Remove(df);
+                    _ = MessageBox.Show($"The file: '{df.FileName}' is no more duplicated so is no more in this list.{Environment.NewLine}{(df.Files.Count == 1 ? $"The final path is: '{df.Files[0].FullName}'" : "")}", "Duplication removed", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    _ = finder.Duplicates.Remove(df);
                     ShowNextDuplication();
                     dgvDuplicates.Rows.RemoveAt(selectedIndex);
                     duplicateViewer.BringToFront();
@@ -219,9 +220,9 @@ namespace DuplicateFinder
         {
             if (dgvDuplicates.SelectedRows.Count > 0)
             {
-                int new_selection = dgvDuplicates.SelectedRows[0].Index - 1 >= 0 ? dgvDuplicates.SelectedRows[0].Index - 1 : 0;
+                var new_selection = dgvDuplicates.SelectedRows[0].Index - 1 >= 0 ? dgvDuplicates.SelectedRows[0].Index - 1 : 0;
                 SelectRow(new_selection);
-                DuplicatedFile df = dgvDuplicates.Rows[new_selection].Tag as DuplicatedFile;
+                var df = dgvDuplicates.Rows[new_selection].Tag as DuplicatedFile;
                 duplicateViewer.SetDuplicate(df);
             }
         }
@@ -235,9 +236,9 @@ namespace DuplicateFinder
         {
             if (dgvDuplicates.SelectedRows.Count >= 0)
             {
-                int new_selection = dgvDuplicates.SelectedRows[0].Index + 1 < dgvDuplicates.Rows.Count ? dgvDuplicates.SelectedRows[0].Index + 1 : 0;
+                var new_selection = dgvDuplicates.SelectedRows[0].Index + 1 < dgvDuplicates.Rows.Count ? dgvDuplicates.SelectedRows[0].Index + 1 : 0;
                 SelectRow(new_selection);
-                DuplicatedFile df = dgvDuplicates.Rows[new_selection].Tag as DuplicatedFile;
+                var df = dgvDuplicates.Rows[new_selection].Tag as DuplicatedFile;
                 duplicateViewer.SetDuplicate(df);
             }
         }
@@ -253,6 +254,19 @@ namespace DuplicateFinder
                     dgvDuplicates.FirstDisplayedScrollingRowIndex = (index - 5 >= 0 ? index - 5 : index);
                 }
             }
+        }
+
+        private void txtQuickSearch_TextChanged(object sender, EventArgs e)
+        {
+            SearchDuplicates();
+        }
+    }
+
+    public static class Extensions
+    {
+        public static int ContarLetras(this string palabra)
+        {
+            return palabra.Length;
         }
     }
 }

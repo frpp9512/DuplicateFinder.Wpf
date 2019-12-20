@@ -19,7 +19,7 @@ namespace DuplicateFinder
             InitializeComponent();
             totalDuplications = foundedDuplications;
             lbTaskTime.Text = $"Task time: {taskTime}";
-            lbProcessedDirs.Text = $"Processed: {processedDirs} directorires";
+            lbProcessedDirs.Text = $"Processed: {processedDirs} directories";
             lbFoundedDuplications.Text = $"Founded with duplications: {foundedDuplications} files";
             lbTotalSize.Text = $"Total size of the files: {Toolkit.GetSizeString(totalsize)}";
             lbLostSpace.Text = $"Total space lost by duplications: {Toolkit.GetSizeString(spaceLost)}";

@@ -53,7 +53,7 @@ namespace DuplicateFinder
             dgvDuplicatedFiles.Rows.Clear();
             foreach (var file in duplicate.Files)
             {
-                int added = dgvDuplicatedFiles.Rows.Add(file.FullName, "Open...", "Open directory...", "Delete");
+                var added = dgvDuplicatedFiles.Rows.Add(file.FullName, "Open...", "Open directory...", "Delete");
                 dgvDuplicatedFiles.Rows[added].Tag = file;                
             }
         }
@@ -77,20 +77,20 @@ namespace DuplicateFinder
         {
             if (e.RowIndex >= 0)
             {
-                FileInfo file = (dgvDuplicatedFiles.Rows[e.RowIndex].Tag as FileInfo);
+                var file = (dgvDuplicatedFiles.Rows[e.RowIndex].Tag as FileInfo);
                 switch (e.ColumnIndex)
                 {
                     case 2:
-                        Process.Start($"{Environment.SystemDirectory}\\explorer.exe", $"{file.Directory.FullName}");
+                        _ = Process.Start($"{Environment.SystemDirectory}\\explorer.exe", $"{file.Directory.FullName}");
                         break;
                     case 1:
-                        Process.Start(file.FullName);
+                        _ = Process.Start(file.FullName);
                         break;
                     case 3:
                         if (MessageBox.Show($"Do you want to delete '{file.FullName}'?", "Delete file", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                         {
                             file.Delete();
-                            duplicate.Files.Remove(file);
+                            _ = duplicate.Files.Remove(file);
                             dgvDuplicatedFiles.Rows.RemoveAt(e.RowIndex);
                             if (duplicate.Files.Count <= 1)
                             {

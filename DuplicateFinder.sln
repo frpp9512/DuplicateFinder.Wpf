@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26403.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29519.87
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DuplicateFinder", "DuplicateFinder\DuplicateFinder.csproj", "{AFB289C1-405E-418E-A200-05C1B698D3D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartB1t.Toolbox", "SmartB1t.Toolbox\SmartB1t.Toolbox.csproj", "{BF85C2A2-462E-4E33-B1DE-47735D670B06}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartB1t.Toolbox.DuplicateFinder.Output", "SmartB1t.Toolbox.DuplicateFinder.Output\SmartB1t.Toolbox.DuplicateFinder.Output.csproj", "{8FD670EB-82ED-4AA9-8E6C-17CBB63801A7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +19,19 @@ Global
 		{AFB289C1-405E-418E-A200-05C1B698D3D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFB289C1-405E-418E-A200-05C1B698D3D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFB289C1-405E-418E-A200-05C1B698D3D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF85C2A2-462E-4E33-B1DE-47735D670B06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF85C2A2-462E-4E33-B1DE-47735D670B06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF85C2A2-462E-4E33-B1DE-47735D670B06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF85C2A2-462E-4E33-B1DE-47735D670B06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FD670EB-82ED-4AA9-8E6C-17CBB63801A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FD670EB-82ED-4AA9-8E6C-17CBB63801A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FD670EB-82ED-4AA9-8E6C-17CBB63801A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FD670EB-82ED-4AA9-8E6C-17CBB63801A7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1D262AF8-024C-4C15-A525-F96EDA59C13D}
 	EndGlobalSection
 EndGlobal

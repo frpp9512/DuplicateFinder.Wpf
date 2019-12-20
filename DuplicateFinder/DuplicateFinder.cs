@@ -1,25 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.IO;
 
 namespace DuplicateFinder
 {
-    class DuplicateFinder
+    internal class DuplicateFinder
     {
         public DirectoryInfo SelectedDirectory { get; set; }
         public List<DuplicatedFile> Duplicates { get; private set; }
         public int DirectoriesCount { get; private set; }
         public int ProcessedDirectoriesCount { get; private set; }
         public Progress<DuplicateSearchProgress> Progress { get; private set; } = new Progress<DuplicateSearchProgress>();
-        CancellationTokenSource Cancellation { get; } = new CancellationTokenSource();
-        public long TotalSpaceInDuplicates { get => Duplicates.Sum(d => d.TotalDuplicationSize); }
-        public long TotalSpaceLostByDuplicates { get => TotalSpaceInDuplicates - Duplicates.Sum(d => d.AverageFileSize); }
+        private CancellationTokenSource Cancellation { get; } = new CancellationTokenSource();
+        public long TotalSpaceInDuplicates => Duplicates.Sum(d => d.TotalDuplicationSize);
+        public long TotalSpaceLostByDuplicates => TotalSpaceInDuplicates - Duplicates.Sum(d => d.AverageFileSize);
 
-        public async Task StartSearchOfDuplicates()
+        public async Task StartSearchOfDuplicatesAsync()
         {
             try
             {
@@ -46,7 +45,7 @@ namespace DuplicateFinder
 
         private List<DuplicatedFile> FindDuplicates(DirectoryInfo directory, CancellationToken cancel, List<FileInfo> accumulated_files = null, List<DuplicatedFile> accumulated_duplications = null)
         {
-            DirectoryInfo current_directory = directory;
+            var current_directory = directory;
 
             IEnumerable<DirectoryInfo> sub_directories;
 
@@ -75,18 +74,18 @@ namespace DuplicateFinder
                     dynamic result = accumulated_files.Where(f => f.Name == file.Name && f.Length == file.Length);
                     if ((result as IEnumerable<FileInfo>).Count() > 0)
                     {
-                        DuplicatedFile new_duplication = new DuplicatedFile { FileName = file.Name };
+                        var new_duplication = new DuplicatedFile { FileName = file.Name };
                         new_duplication.Files.Add(file);
                         new_duplication.Files.Add((result as IEnumerable<FileInfo>).ElementAt(0));
                         accumulated_duplications.Add(new_duplication);
-                        accumulated_files.Remove((result as IEnumerable<FileInfo>).ElementAt(0));
+                        _ = accumulated_files.Remove((result as IEnumerable<FileInfo>).ElementAt(0));
                     }
                     else
                     {
                         result = accumulated_duplications.Where(d => d.FileName == file.Name && d.AverageFileSize == file.Length);
                         if ((result as IEnumerable<DuplicatedFile>).Count() > 0)
                         {
-                            DuplicatedFile existing_duplication = (result as IEnumerable<DuplicatedFile>).ElementAt(0);
+                            var existing_duplication = (result as IEnumerable<DuplicatedFile>).ElementAt(0);
                             existing_duplication.Files.Add(file);
                         }
                         else
@@ -103,7 +102,7 @@ namespace DuplicateFinder
 
             foreach (var dir in sub_directories)
             {
-                FindDuplicates(dir, cancel, accumulated_files, accumulated_duplications);
+                _ = FindDuplicates(dir, cancel, accumulated_files, accumulated_duplications);
             }
 
             return accumulated_duplications;
@@ -128,7 +127,7 @@ namespace DuplicateFinder
                 (Progress as IProgress<DuplicateSearchProgress>).Report(new DuplicateSearchProgress { Operation = DuplicateSearchOperation.ErrorFound, AdditionalInformation = ex.Message });
                 return 0;
             }
-            int count = directories.Count();
+            var count = directories.Count();
             foreach (var dir in directories)
             {
                 count += GetDirectoriesCount(dir, cancel);
