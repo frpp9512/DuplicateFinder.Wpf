@@ -41,7 +41,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <summary>
         /// The <see cref="FileInfo"/> instances for the duplications.
         /// </summary>
-        public IList<FileInfo> Files { get; set; } = new List<FileInfo>();
+        public IList<IAnalysedFile> Files { get; set; }
 
         /// <summary>
         /// The total times the file is repeated.

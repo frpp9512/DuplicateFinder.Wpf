@@ -21,7 +21,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <summary>
         /// The selected directory to find duplications in.
         /// </summary>
-        public DirectoryInfo SelectedDirectory { get; set; }
+        public IDirectoryMapped SelectedDirectory { get; set; }
 
         /// <summary>
         /// The selected way to perform the search.
@@ -46,7 +46,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <summary>
         /// The current processing directory.
         /// </summary>
-        public DirectoryInfo CurrentDirectory { get; private set; }
+        public IDirectoryMapped CurrentDirectory { get; private set; }
 
         /// <summary>
         /// The minimun size needed for replication analisys in bytes.
@@ -61,7 +61,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <summary>
         /// The directories mapped, where the search process will take place.
         /// </summary>
-        public IList<DirectoryInfo> MappedDirectories { get; private set; }
+        public IList<IDirectoryMapped> MappedDirectories { get; private set; }
 
         /// <summary>
         /// The file duplications founded.
@@ -78,6 +78,11 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         #region Private Memebers
 
         /// <summary>
+        /// The <see cref="IDirectoryMapper"/> instance used to map the directories and subdirectories of the specified route.
+        /// </summary>
+        private IDirectoryMapper DirectoryMapper { get; set; }
+
+        /// <summary>
         /// The progress report provider.
         /// </summary>
         private IProgress<DuplicationSearchProgressReport> Progress { get; set; }
@@ -85,7 +90,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <summary>
         /// The files mapped that has no duplications found.
         /// </summary>
-        private IList<FileInfo> NonDuplicatedFiles { get; set; } = new List<FileInfo>();
+        private IList<IAnalysedFile> NonDuplicatedFiles { get; set; } = new List<IAnalysedFile>();
 
         /// <summary>
         /// The stopwatch to measure the search operation time.
@@ -102,9 +107,10 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// and with the minimun size for analysis set as 0.
         /// </summary>
         /// <param name="directoryPath">The path where the duplications search will be performed.</param>
-        public DuplicateFinder(string directoryPath)
+        public DuplicateFinder(string directoryPath, IDirectoryMapper directoryMapper)
         {
-            SelectedDirectory = new DirectoryInfo(directoryPath);
+            DirectoryMapper = directoryMapper;
+            SelectedDirectory = new WindowsDirectoryMapped(DirectoryMapper) { DirectoryInfo = new DirectoryInfo(directoryPath) };
             Progress = new Progress<DuplicationSearchProgressReport>();
             CancelTokenSource = new CancellationTokenSource();
         }
@@ -116,8 +122,8 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// </summary>
         /// <param name="directoryPath">The path where the duplications search will be performed.</param>
         /// <param name="searchWay">The way used for the duplication search.</param>
-        public DuplicateFinder(string directoryPath, DuplicationSearchWay searchWay) 
-            : this(directoryPath)
+        public DuplicateFinder(string directoryPath, IDirectoryMapper directoryMapper, DuplicationSearchWay searchWay) 
+            : this(directoryPath, directoryMapper)
         {
             SearchWay = searchWay;
         }
@@ -129,8 +135,8 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// </summary>
         /// <param name="directoryPath">The path where the duplications search will be performed.</param>
         /// <param name="minimunSizeForAnalysis">The minimun size needed for the file to be analysed.</param>
-        public DuplicateFinder(string directoryPath, long minimunSizeForAnalysis)
-            : this(directoryPath)
+        public DuplicateFinder(string directoryPath, IDirectoryMapper directoryMapper, long minimunSizeForAnalysis)
+            : this(directoryPath, directoryMapper)
         {
             MinimunSizeForAnalysis = minimunSizeForAnalysis;
         }
@@ -143,8 +149,8 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <param name="directoryPath">The path where the duplications search will be performed.</param>
         /// <param name="searchWay">The way used for the duplication search.</param>
         /// <param name="minimunSizeForAnalysis">The minimun size needed for the file to be analysed.</param>
-        public DuplicateFinder(string directoryPath, DuplicationSearchWay searchWay, long minimunSizeForAnalysis)
-            : this(directoryPath, minimunSizeForAnalysis)
+        public DuplicateFinder(string directoryPath, IDirectoryMapper directoryMapper, DuplicationSearchWay searchWay, long minimunSizeForAnalysis)
+            : this(directoryPath, directoryMapper, minimunSizeForAnalysis)
         {
             SearchWay = searchWay;
         }
@@ -226,7 +232,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
             Progress.Report(new DuplicationSearchProgressReport
             {
                 CurrentOperation = Status,
-                CurrentDirectory = CurrentDirectory?.FullName,
+                CurrentDirectory = CurrentDirectory?.Fullname,
                 Percentage = SearchPercentage,
                 Details = message
             });
@@ -235,13 +241,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         private void ReportDuplication(string message)
         {
             Status = DuplicateSearchStatus.DuplicationFounded;
-            Progress.Report(new DuplicationSearchProgressReport
-            {
-                CurrentOperation = Status,
-                CurrentDirectory = CurrentDirectory?.FullName,
-                Percentage = SearchPercentage,
-                Details = message
-            });
+            ReportStatus(message);
         }
 
         /// <summary>
@@ -275,7 +275,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <param name="directory">The directory to get all the subdirectories.</param>
         /// <param name="cancellationToken">The cancellation token for operation abort.</param>
         /// <returns>The full list of the subdirectories in the specified one.</returns>
-        private IList<DirectoryInfo> MapDirectories(DirectoryInfo directory, CancellationToken cancellationToken)
+        private IList<IDirectoryMapped> MapDirectories(IDirectoryMapped directory, CancellationToken cancellationToken)
         {
             try
             {
@@ -308,7 +308,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
             {
                 throw;
             }
-            return new List<DirectoryInfo>();
+            return new List<IDirectoryMapped>();
         }
 
         private void SearchDuplicated(CancellationToken cancellationToken)
@@ -326,7 +326,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
                     MidpointRounding.ToEven);
                 try
                 {
-                    var files = dir.EnumerateFiles();
+                    var files = dir.GetFiles();
                     foreach (var file in files)
                     {
                         if (file.Length >= MinimunSizeForAnalysis)
@@ -334,11 +334,24 @@ namespace SmartB1t.Toolbox.DuplicateFinder
                             cancellationToken.ThrowIfCancellationRequested();
                             Status = DuplicateSearchStatus.SearchingDuplicates;
                             ReportStatus($"Analizing file. {file.FullName}");
-                            var existentDuplication = SearchWay == DuplicationSearchWay.NameAndSizeComparison
-                                ? DuplicatedFiles.FirstOrDefault(
-                                                        df => df.FileName == file.Name && df.AverageFileSize == file.Length)
-                                : DuplicatedFiles.FirstOrDefault(
-                                                        df => CompareFileHashes(file, df.Files.FirstOrDefault()));
+                            DuplicatedFile existentDuplication = null;
+                            switch (SearchWay)
+                            {
+                                case DuplicationSearchWay.NameAndSizeComparison:
+                                    existentDuplication = DuplicatedFiles.FirstOrDefault(
+                                                        df => df.Files.FirstOrDefault().CompareTo(file) == 0);
+                                    break;
+                                case DuplicationSearchWay.HashComparison:
+                                    existentDuplication = DuplicatedFiles.Where(df => df.AverageFileSize == file.Length)
+                                        .FirstOrDefault(df => 
+                                        { 
+                                            file.CreateHash();
+                                            return df.Files.FirstOrDefault().CompareTo(file) == 0; 
+                                        });
+                                    break;
+                                default:
+                                    break;
+                            }
                             if (existentDuplication != null)
                             {
                                 ReportDuplication($"Duplication founded at: {file.FullName} with {string.Join(", ", existentDuplication.Files.Select(d => d.FullName))}");
@@ -346,25 +359,29 @@ namespace SmartB1t.Toolbox.DuplicateFinder
                             }
                             else
                             {
-                                var duplicatedFile = SearchWay == DuplicationSearchWay.NameAndSizeComparison
-                                    ? NonDuplicatedFiles.FirstOrDefault(
-                                                                f => f.Name == file.Name && f.Length == file.Length)
-                                    : NonDuplicatedFiles.FirstOrDefault(
-                                                                f => CompareFileHashes(file, f));
+                                var duplicatedFile = NonDuplicatedFiles.Where(f => f.Length == file.Length)
+                                    .FirstOrDefault(f => 
+                                    {
+                                        if (SearchWay == DuplicationSearchWay.HashComparison)
+                                        {
+                                            file.CreateHash();
+                                        }
+                                        return f.CompareTo(file) == 0; 
+                                    });
                                 if (duplicatedFile != null)
                                 {
                                     ReportDuplication($"Duplication founded at: {file.FullName} with {duplicatedFile.FullName}");
                                     var duplication = new DuplicatedFile
                                     {
                                         FileName = duplicatedFile.Name,
-                                        Files = new List<FileInfo>
+                                        Files = new List<IAnalysedFile>
                                         {
                                             duplicatedFile,
                                             file
                                         }
                                     };
                                     DuplicatedFiles.Add(duplication);
-                                    _ = NonDuplicatedFiles.Remove(duplicatedFile);
+                                    _ = NonDuplicatedFiles.Remove(duplicatedFile); 
                                 }
                                 else
                                 {

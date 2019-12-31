@@ -42,12 +42,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DuplicateFinder\DuplicatedFile.cs" />
-    <Compile Include="DuplicateFinder\DuplicateFinder.cs" />
-    <Compile Include="DuplicateFinder\DuplicateSearchStatus.cs" />
-    <Compile Include="DuplicateFinder\DuplicationSearchProgressStatus.cs" />
-    <Compile Include="DuplicateFinder\DuplicationSearchWay.cs" />
-    <Compile Include="DuplicateFinder\IDuplicateFinder.cs" />
+    <Compile Include="DuplicateFinder\Models\BasicWindowsDirectoryMapper.cs" />
+    <Compile Include="DuplicateFinder\Interfaces\IAnalysedFile.cs" />
+    <Compile Include="DuplicateFinder\Interfaces\IDirectoryMapped.cs" />
+    <Compile Include="DuplicateFinder\Interfaces\IDirectoryMapper.cs" />
+    <Compile Include="DuplicateFinder\Models\AnalysedFile.cs" />
+    <Compile Include="DuplicateFinder\Models\WindowsDirectoryMapped.cs" />
+    <Compile Include="DuplicateFinder\Models\DuplicatedFile.cs" />
+    <Compile Include="DuplicateFinder\Controller\DuplicateFinder.cs" />
+    <Compile Include="DuplicateFinder\Enums\DuplicateSearchStatus.cs" />
+    <Compile Include="DuplicateFinder\Models\DuplicationSearchProgressStatus.cs" />
+    <Compile Include="DuplicateFinder\Enums\DuplicationSearchWay.cs" />
+    <Compile Include="DuplicateFinder\Interfaces\IDuplicateFinder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Service Include="{94E38DFF-614B-4cbd-B67C-F211BB35CE8B}" />
   </ItemGroup>
