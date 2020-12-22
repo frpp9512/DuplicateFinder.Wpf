@@ -54,6 +54,11 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         public long MinimunSizeForAnalysis { get; set; } = 0;
 
         /// <summary>
+        /// The maximun size needed for replication analisys in bytes.
+        /// </summary>
+        public long MaximunSizeForAnlysis { get; set; } = 0;
+
+        /// <summary>
         /// The search process completing percentage.
         /// </summary>
         public double SearchPercentage { get; set; }
@@ -66,7 +71,7 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <summary>
         /// The file duplications founded.
         /// </summary>
-        public IList<DuplicatedFile> DuplicatedFiles { get; private set; } = new List<DuplicatedFile>();
+        public IList<IDuplicatedFile> DuplicatedFiles { get; private set; } = new List<IDuplicatedFile>();
 
         /// <summary>
         /// The time taked by the duplication search operation.
@@ -123,7 +128,8 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <param name="directoryPath">The path where the duplications search will be performed.</param>
         /// <param name="searchWay">The way used for the duplication search.</param>
         public DuplicateFinder(string directoryPath, IDirectoryMapper directoryMapper, DuplicationSearchWay searchWay) 
-            : this(directoryPath, directoryMapper)
+            : this(directoryPath,
+                   directoryMapper)
         {
             SearchWay = searchWay;
         }
@@ -136,9 +142,20 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <param name="directoryPath">The path where the duplications search will be performed.</param>
         /// <param name="minimunSizeForAnalysis">The minimun size needed for the file to be analysed.</param>
         public DuplicateFinder(string directoryPath, IDirectoryMapper directoryMapper, long minimunSizeForAnalysis)
+            : this(directoryPath, directoryMapper) => MinimunSizeForAnalysis = minimunSizeForAnalysis;
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="DuplicateFinder"/>.
+        /// The search will be performed with the <see cref="DuplicationSearchWay.NameAndSizeComparison"/> way
+        /// and with the minimun size for analysis provided.
+        /// </summary>
+        /// <param name="directoryPath">The path where the duplications search will be performed.</param>
+        /// <param name="minimunSizeForAnalysis">The minimun size needed for the file to be analysed.</param>
+        public DuplicateFinder(string directoryPath, IDirectoryMapper directoryMapper, long minimunSizeForAnalysis, long maximunSizeForAnalysis)
             : this(directoryPath, directoryMapper)
         {
             MinimunSizeForAnalysis = minimunSizeForAnalysis;
+            MaximunSizeForAnlysis = maximunSizeForAnalysis;
         }
 
         /// <summary>
@@ -149,11 +166,8 @@ namespace SmartB1t.Toolbox.DuplicateFinder
         /// <param name="directoryPath">The path where the duplications search will be performed.</param>
         /// <param name="searchWay">The way used for the duplication search.</param>
         /// <param name="minimunSizeForAnalysis">The minimun size needed for the file to be analysed.</param>
-        public DuplicateFinder(string directoryPath, IDirectoryMapper directoryMapper, DuplicationSearchWay searchWay, long minimunSizeForAnalysis)
-            : this(directoryPath, directoryMapper, minimunSizeForAnalysis)
-        {
-            SearchWay = searchWay;
-        }
+        public DuplicateFinder(string directoryPath, IDirectoryMapper directoryMapper, DuplicationSearchWay searchWay, long minimunSizeForAnalysis, long maximunSizeForAnalysis)
+            : this(directoryPath, directoryMapper, minimunSizeForAnalysis, maximunSizeForAnalysis) => SearchWay = searchWay;
 
         #endregion
 
@@ -329,12 +343,12 @@ namespace SmartB1t.Toolbox.DuplicateFinder
                     var files = dir.GetFiles();
                     foreach (var file in files)
                     {
-                        if (file.Length >= MinimunSizeForAnalysis)
+                        if (file.Length >= MinimunSizeForAnalysis && (MaximunSizeForAnlysis > 0 ? file.Length <= MaximunSizeForAnlysis : true))
                         {
                             cancellationToken.ThrowIfCancellationRequested();
                             Status = DuplicateSearchStatus.SearchingDuplicates;
                             ReportStatus($"Analizing file. {file.FullName}");
-                            DuplicatedFile existentDuplication = null;
+                            IDuplicatedFile existentDuplication = null;
                             switch (SearchWay)
                             {
                                 case DuplicationSearchWay.NameAndSizeComparison:
@@ -359,29 +373,29 @@ namespace SmartB1t.Toolbox.DuplicateFinder
                             }
                             else
                             {
-                                var duplicatedFile = NonDuplicatedFiles.Where(f => f.Length == file.Length)
-                                    .FirstOrDefault(f => 
+                                var duplicatedFiles = NonDuplicatedFiles.Where(f => f.Length == file.Length)
+                                    .Where(f => 
                                     {
                                         if (SearchWay == DuplicationSearchWay.HashComparison)
                                         {
-                                            file.CreateHash();
+                                            f.CreateHash();
                                         }
                                         return f.CompareTo(file) == 0; 
                                     });
-                                if (duplicatedFile != null)
+                                if (duplicatedFiles?.Count() > 0)
                                 {
-                                    ReportDuplication($"Duplication founded at: {file.FullName} with {duplicatedFile.FullName}");
+                                    ReportDuplication($"Duplication founded!");
                                     var duplication = new DuplicatedFile
                                     {
-                                        FileName = duplicatedFile.Name,
+                                        FileName = file.Name,
                                         Files = new List<IAnalysedFile>
                                         {
-                                            duplicatedFile,
                                             file
                                         }
                                     };
+                                    ((List<IAnalysedFile>)duplication.Files).AddRange(duplicatedFiles);
                                     DuplicatedFiles.Add(duplication);
-                                    _ = NonDuplicatedFiles.Remove(duplicatedFile); 
+                                    duplicatedFiles.ToList().ForEach(f => NonDuplicatedFiles.Remove(f));
                                 }
                                 else
                                 {
@@ -416,32 +430,32 @@ namespace SmartB1t.Toolbox.DuplicateFinder
             }
         }
 
-        /// <summary>
-        /// Compares 2 files to determine if are equals using the hash compare method.
-        /// </summary>
-        /// <param name="file1"></param>
-        /// <param name="file2"></param>
-        /// <returns><see langword="true"/> if the files are equals.</returns>
-        private static bool CompareFileHashes(FileInfo file1, FileInfo file2)
-        {
-            if (file1.Length == file2.Length)
-            {
-                using (var hash = HashAlgorithm.Create())
-                {
-                    byte[] fileHash1, fileHash2;
+        ///// <summary>
+        ///// Compares 2 files to determine if are equals using the hash compare method.
+        ///// </summary>
+        ///// <param name="file1"></param>
+        ///// <param name="file2"></param>
+        ///// <returns><see langword="true"/> if the files are equals.</returns>
+        //private static bool CompareFileHashes(FileInfo file1, FileInfo file2)
+        //{
+        //    if (file1.Length == file2.Length)
+        //    {
+        //        using (var hash = HashAlgorithm.Create())
+        //        {
+        //            byte[] fileHash1, fileHash2;
 
-                    using (FileStream fileStream1 = new FileStream(file1.FullName, FileMode.Open),
-                                      fileStream2 = new FileStream(file2.FullName, FileMode.Open))
-                    {
-                        fileHash1 = hash.ComputeHash(fileStream1);
-                        fileHash2 = hash.ComputeHash(fileStream2);
-                    }
+        //            using (FileStream fileStream1 = new FileStream(file1.FullName, FileMode.Open),
+        //                              fileStream2 = new FileStream(file2.FullName, FileMode.Open))
+        //            {
+        //                fileHash1 = hash.ComputeHash(fileStream1);
+        //                fileHash2 = hash.ComputeHash(fileStream2);
+        //            }
 
-                    return BitConverter.ToString(fileHash1) == BitConverter.ToString(fileHash2);
-                }
-            }
-            return false;
-        }
+        //            return BitConverter.ToString(fileHash1) == BitConverter.ToString(fileHash2);
+        //        }
+        //    }
+        //    return false;
+        //}
 
         #endregion
     }

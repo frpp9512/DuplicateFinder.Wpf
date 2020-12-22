@@ -12,11 +12,9 @@ namespace SmartB1t.Toolbox.DuplicateFinder
     /// Represents a duplicated file in the storage device. 
     /// It contains the the reference of all the duplications.
     /// </summary>
-    public class DuplicatedFile
+    public class DuplicatedFile : IDuplicatedFile
     {
-        /// <summary>
-        /// The file icon
-        /// </summary>
+        
         public Bitmap Icon
         {
             get
@@ -33,34 +31,22 @@ namespace SmartB1t.Toolbox.DuplicateFinder
             }
         }
 
-        /// <summary>
-        /// The name of the duplicate file.
-        /// </summary>
+        
         public string FileName { get; set; }
 
-        /// <summary>
-        /// The <see cref="FileInfo"/> instances for the duplications.
-        /// </summary>
+        
         public IList<IAnalysedFile> Files { get; set; }
 
-        /// <summary>
-        /// The total times the file is repeated.
-        /// </summary>
+        
         public int TimesRepeated => Files.Count;
 
-        /// <summary>
-        /// The average file size of the duplicated file.
-        /// </summary>
+        
         public long AverageFileSize => Files.Count > 0 ? TotalDuplicationSize / Files.Count : 0;
 
-        /// <summary>
-        /// The total size of all duplicated files.
-        /// </summary>
+        
         public long TotalDuplicationSize => Files.Sum(f => f.Length);
 
-        /// <summary>
-        /// The space lost by having duplicated files.
-        /// </summary>
+        
         public long SpaceLostByDuplication => TotalDuplicationSize - AverageFileSize;
     }
 }

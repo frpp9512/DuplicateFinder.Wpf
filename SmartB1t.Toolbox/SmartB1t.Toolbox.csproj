@@ -47,6 +47,7 @@
     <Compile Include="DuplicateFinder\Interfaces\IDirectoryMapped.cs" />
     <Compile Include="DuplicateFinder\Interfaces\IDirectoryMapper.cs" />
     <Compile Include="DuplicateFinder\Models\AnalysedFile.cs" />
+    <Compile Include="DuplicateFinder\Interfaces\IDuplicatedFile.cs" />
     <Compile Include="DuplicateFinder\Models\WindowsDirectoryMapped.cs" />
     <Compile Include="DuplicateFinder\Models\DuplicatedFile.cs" />
     <Compile Include="DuplicateFinder\Controller\DuplicateFinder.cs" />
